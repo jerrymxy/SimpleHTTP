@@ -10,10 +10,10 @@
 std::vector<std::string> splitString(std::string str);
 // Generate a map that show the request fields
 std::map<std::string, std::string> getRequestField(const std::vector<std::string>& split_str);
-
+// Generate a map that splits the param from the request
 std::map<std::string, std::string> getRequestParam(std::string source);
-
-std::string readFile(const std::string& filepath);
+// Read from file
+std::string readFile(std::string filepath);
 // Get current time
 std::string getDate();
 

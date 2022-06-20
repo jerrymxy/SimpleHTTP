@@ -73,6 +73,7 @@ SOCKET createClientSocket(const char* ip_addr, const u_short port) {
 	// cli_addr.sin_addr.S_un.S_addr = inet_addr(ip_addr);
 	inet_pton(AF_INET, ip_addr, &cli_addr.sin_addr.S_un.S_addr);
 
+	// Connect to server
 	if (connect(tcp_socket, (struct sockaddr*)&cli_addr, sizeof(cli_addr)) == SOCKET_ERROR) {
 		err("connect");
 		return 0;

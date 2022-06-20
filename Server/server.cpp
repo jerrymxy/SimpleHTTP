@@ -1,9 +1,11 @@
 #include "../TCPSocket/tcpSocket.hpp"
 #include "utils.hpp"
-#include <fstream>
 
-std::string genReply(const char*);
-const std::string http_version = "HTTP/1.0";
+std::string genReply(const char*); // Deliver HTTP request string to POST/GET
+
+const std::string http_version = "HTTP/1.0"; // Default HTTP version
+const int LEN = 1024 * 1024; // Buf size
+char buf[LEN] = { 0 }; // Buffer
 
 int main() {
 	initSocket();
@@ -11,9 +13,6 @@ int main() {
 	SOCKET tcp_socket = createServerSocket();
 
 	std::cout << "Server started. Waiting for connection." << std::endl;
-
-	const int LEN = 1024; // Buf size
-	char buf[LEN] = { 0 };
 
 	size_t fail_count = 0;
 
@@ -57,10 +56,10 @@ int main() {
 	return 0;
 }
 
-
+// 
 auto processGET(std::map<std::string, std::string>& request_field) {
 	// Get file path from URL
-	std::string filepath = request_field["url"].substr(1, request_field["url"].find('?'));
+	std::string filepath = request_field["url"].substr(0, request_field["url"].find('?'));
 
 	std::string body = "";
 	std::string content_type = "text/html; charset=utf-8";
@@ -68,8 +67,8 @@ auto processGET(std::map<std::string, std::string>& request_field) {
 	std::string date = getDate();
 
 	// Return index.html by default
-	if (filepath == "") {
-		filepath = "index.html";
+	if (filepath == "/") {
+		filepath = "/index.html";
 	}
 	if (request_field["url"].find('?') < request_field["url"].size()) {
 		std::string param_str = request_field["url"].substr(request_field["url"].find('?') + 1);
@@ -83,11 +82,13 @@ auto processGET(std::map<std::string, std::string>& request_field) {
 		}
 	}
 
+	// Read html file, return 404 when file not found
 	if ((body = readFile(filepath)) == "404") {
 		return http_version + " 404 Not Found" + "\r\n" +
 			"Date: " + date + "\r\n\r\n";
 	}
 
+	// Reply request
 	std::string reply = http_version + " " + status_code + "\r\n" +
 		"Date: " + date + "\r\n" +
 		"Content-Type: " + content_type + "\r\n" +
@@ -99,19 +100,21 @@ auto processGET(std::map<std::string, std::string>& request_field) {
 
 auto processPOST(std::map<std::string, std::string>& request_field) {
 	std::string date = getDate();
+
+	// Current only support Content-Type: application/x-www-form-urlencoded
 	if (request_field["Content-Type"].find("application/x-www-form-urlencoded") == std::string::npos) {
 		return request_field["http_version"] + " 400 Bad Request" + "\r\n" +
 			"Date: " + date + "\r\n\r\n";
 	}
 	std::string reply = "";
 
-	std::string filepath = request_field["url"].substr(1);
+	std::string filepath = request_field["url"];
 	std::string body = "";
 	std::string content_type = "text/html; charset=utf-8";
 	std::string status_code = "200 OK";
 	
-	if (filepath == "") {
-		filepath = "index.html";
+	if (filepath == "/") {
+		filepath = "/index.html"; // Return index.html by default
 	}
 
 	std::map<std::string, std::string> request_param = getRequestParam(request_field["Body"]);
@@ -125,11 +128,13 @@ auto processPOST(std::map<std::string, std::string>& request_field) {
 		}
 	}
 
+	// Read html file, return 404 when file not found
 	if ((body = readFile(filepath)) == "404") {
 		return request_field["http_version"] + " 404 Not Found" + "\r\n" +
 			"Date: " + date + "\r\n\r\n";
 	}
 
+	// Reply request
 	reply = http_version + " " + status_code + "\r\n" +
 		"Date: " + date + "\r\n" +
 		"Content-Type: " + content_type + "\r\n" +
